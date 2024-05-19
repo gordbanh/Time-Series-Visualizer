@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import calendar
+
 from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
 
@@ -33,30 +35,74 @@ def draw_line_plot():
 
 def draw_bar_plot():
     # Copy and modify data for monthly bar plot
-    df_bar = None
+    # Group the dataframe by year and month
+    df_bar = df.groupby([df.index.year, df.index.month]).mean()
+    # Rename index columns to 'Year' and 'Month'
+    df_bar.index.names = ['Year', 'Month']
+    # Rename column names
+    df_bar = df_bar.rename(columns=({'Page Views': 'Average Page Views'}))
+    # Bring out index columns
+    df_bar = df_bar.reset_index()
+    # Rename months from ints to names
+    df_bar['Month'] = df_bar['Month'].apply(lambda x: calendar.month_name[x])
+    # Put index back in
+    df_bar.index=[df_bar['Year'],df_bar['Month']]
+    # Drop extra columns
+    df_bar = df_bar.drop(['Year','Month'], axis=1)
 
-    # Draw bar plot
-
-
-
-
+    #Draw bar plot
+    fig = sns.catplot(
+        data=df_bar,
+        x='Year', 
+        y="Average Page Views", 
+        kind="bar",
+        hue="Month",
+        legend='full',
+        legend_out=False,
+        hue_order=['January','February','March','April','May','June','July','August','September','October','November','December']
+    ).fig
 
     # Save image and return fig (don't change this part)
     fig.savefig('bar_plot.png')
     return fig
-draw_bar_plot()
+
 def draw_box_plot():
     # Prepare data for box plots (this part is done!)
     df_box = df.copy()
     df_box.reset_index(inplace=True)
-    df_box['year'] = [d.year for d in df_box.date]
-    df_box['month'] = [d.strftime('%b') for d in df_box.date]
+    df_box['year'] = [d.year for d in df_box.Date]
+    df_box['month'] = [d.strftime('%b') for d in df_box.Date]
 
     # Draw box plots (using Seaborn)
-
-
-
-
+    # Set up plots and sizing
+    fig, ax=plt.subplots(1,2,figsize=(28.8,10.8))
+    # Make sure plots do not overlap
+    fig = plt.tight_layout(pad=5)
+    # Plot year-wise box plot
+    fig = sns.boxplot(
+        data=df_box,
+        x='year',
+        y='Page Views',
+        orient="v",
+        legend=False,
+        ax=ax[0],
+        native_scale=False,
+        gap=0.2,
+        fliersize=2
+    ).set_title('Year-wise Box Plot (Trend)').get_figure()
+    # Draw month-wise boxplot 
+    fig = sns.boxplot(
+        data=df_box,
+        x='month',
+        y='Page Views',
+        orient="v",
+        legend=False,
+        ax=ax[1],
+        native_scale=False,
+        gap=0.2,
+        fliersize=2,
+        order=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    ).set_title('Month-wise Box Plot (Seasonality)').get_figure()
 
     # Save image and return fig (don't change this part)
     fig.savefig('box_plot.png')
